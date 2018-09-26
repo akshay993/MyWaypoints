@@ -7,6 +7,8 @@ urlpatterns = [
     #path('maps/', include('maps.urls')),
 
     path('admin/', admin.site.urls),
-    url(r'^maps/', include('maps.urls')),
+    #url(r'^', include('maps.urls')),
+    path('', include('maps.urls')),
+
 
 ]
