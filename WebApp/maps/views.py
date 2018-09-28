@@ -5,6 +5,9 @@ from django.views.generic import TemplateView
 from maps.inputform import InputForm
 from django.http import HttpResponseRedirect
 
+import googlemaps
+from datetime import datetime
+
 
 
 #def index(request):
@@ -27,11 +30,22 @@ class HomeView(TemplateView):
         if form.is_valid():
             start = form.cleaned_data['Start']
             destination = form.cleaned_data['End']
-
             #return HttpResponseRedirect('/search/')
 
-        args = {'form': form, 'start': start, 'End': destination}
+        args = {'form': form, 'start': start, 'end': destination}
+        #print('post')
+
+        x = 'los angeles, ca'
+        if(x == request.POST['Start']):
+             print('hello')
+
+        print(request.POST['End'])
+        gmaps = googlemaps.Client(key='AIzaSyBQThVIW-tNgV4Yth_Evk_vbLS4cVQgjgU')
+        directions_result = gmaps.directions(request.POST['Start'], request.POST['End'], mode="transit", departure_time=datetime.now())
+        #return HttpResponse(directions_result)
+        #print(directions_result)
         return render(request, self.template_name, args)
+        #return render(request, self.template_name, {'response': directions_result})
 
 
 def search(request):
