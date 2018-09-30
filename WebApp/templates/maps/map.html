@@ -74,6 +74,7 @@
           travelMode: 'DRIVING'
         },
             function(response, status) {
+            console.log(response)
           if (status === 'OK') {
             directionsDisplay.setDirections(response);
 
