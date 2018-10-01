@@ -87,7 +87,7 @@ class HomeView(TemplateView):
             weather_list.append(weather_res['weather'][0]['main'])
 
 
-        print(weather_list)
+        #print(weather_list)
 
         #print(str(myRoute))
 
@@ -116,6 +116,9 @@ class HomeView(TemplateView):
 
         #return HttpResponse(json.dumps(direction))
         #return render(request, self.template_name, args)
+
+
+        print(weather_list)
 
         if(directions_result is None):
             return render(request, self.template_name, {'form': form, 'flag': 0})

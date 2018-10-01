@@ -147,6 +147,8 @@
 
              var stepDisplay = new google.maps.InfoWindow;
 
+            console.log({{ weather_list | safe }})
+
              showSteps(server_response, markerArray, stepDisplay, map);
 
         }
@@ -171,8 +173,10 @@
           marker.setMap(map);
           marker.setPosition(myRoute['steps'][i]['start_location']);
           stepDisplay.open(map, marker);
+          <!--console.log(myRoute['steps'][i]['html_instructions']);-->
           attachInstructionText(
-              stepDisplay, marker, 'Rainy', map);
+              <!--{{ weather_list | safe }}[i]-->
+              stepDisplay, marker,{{ weather_list | safe }}[i] , map);
         }
 
       }
