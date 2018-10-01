@@ -25,6 +25,9 @@ from datetime import datetime
 class HomeView(TemplateView):
     template_name = 'maps/index.html'
 
+
+
+
     def get(self, request):
         form = InputForm()
         return render(request, self.template_name, {'form' : form, 'flag': -1})
@@ -73,8 +76,20 @@ class HomeView(TemplateView):
         origin={}
         destination['query'] = y
         origin['query'] =x
-        direction['request'] = {'destination': destination, 'origin': origin, 'travelMode': "DRIVING"}
+        direction['request'] = {'destination': destination, 'origin': origin, 'travelMode': "WALKING"}
 
+
+        #Now, Calling the Weather API to fetch the weather details
+        lat_param, lon_param = fetch_latlong(x_param, gmaps)
+        request2 = "https://api.openweathermap.org/data/2.5/weather?lat=" + lat_param + "&lon=" + lon_param + "&appid=66b64cfa937f31bbd5cb328cdad938a0"
+        weather_response = urllib.request.urlopen(request2).read()
+        weatherresponse_start = json.loads(weather_response)
+
+        lat_param, lon_param = fetch_latlong(y_param, gmaps)
+        #request3 = "https://api.openweathermap.org/data/2.5/weather?q=" + y_param + "&appid=66b64cfa937f31bbd5cb328cdad938a0"
+        request3 = "https://api.openweathermap.org/data/2.5/weather?lat=" + lat_param + "&lon=" + lon_param + "&appid=66b64cfa937f31bbd5cb328cdad938a0"
+        weather_response = urllib.request.urlopen(request3).read()
+        weatherresponse_destination = json.loads(weather_response)
 
 
         #return HttpResponse(json.dumps(direction))
@@ -83,14 +98,20 @@ class HomeView(TemplateView):
         if(directions_result is None):
             return render(request, self.template_name, {'form': form, 'flag': 0})
         else:
-            return render(request, self.template_name, {'form': form,'response': json.dumps(direction), 'flag': 1, 'start': start, 'end': destination})
-            #return render(request, self.template_name,
-             #             {'form': form, 'response': json_data, 'flag': 1, 'start': start,
-              #             'end': destination})
+            return render(request, self.template_name, {'form': form,'response': json.dumps(direction), 'flag': 1, 'start': start, 'end': destination, 'start_weather': json.dumps(weatherresponse_start), 'destination_weather': json.dumps(weatherresponse_destination)})
 
 def search(request):
     return render(request, 'maps/map.html', context=None)
 
 
+def fetch_latlong(loc, gmaps):
+    geocode_result = gmaps.geocode(loc)
+    lat = geocode_result[0]["geometry"]["location"]["lat"]
+    lon = geocode_result[0]["geometry"]["location"]["lng"]
 
+    lat = str(lat)
+    lon = str(lon)
+    lat_param = quote(lat)
+    lon_param = quote(lon)
 
+    return lat_param, lon_param
