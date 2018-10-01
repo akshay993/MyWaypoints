@@ -69,14 +69,33 @@ class HomeView(TemplateView):
         #print(request)
         response = urllib.request.urlopen(request1).read()
         direction = json.loads(response)
-        print(direction)
 
+        #myRoute = direction['routes'][0]['legs'][0]['steps'][1]['start_location']
+
+
+        weather_list=[]
+
+        #for i in direction['routes'][0]['legs'][0]['steps']:
+        for x in direction['routes'][0]['legs'][0]['steps']:
+            lat = str(x['start_location']['lat'])
+            lon = str(x['start_location']['lng'])
+            lat_param = quote(lat)
+            lon_param = quote(lon)
+            req = "https://api.openweathermap.org/data/2.5/weather?lat=" + lat_param + "&lon=" + lon_param + "&appid=66b64cfa937f31bbd5cb328cdad938a0"
+            weather_response = urllib.request.urlopen(req).read()
+            weather_res = json.loads(weather_response)
+            weather_list.append(weather_res['weather'][0]['main'])
+
+
+        print(weather_list)
+
+        #print(str(myRoute))
 
         destination={}
         origin={}
         destination['query'] = y
         origin['query'] =x
-        direction['request'] = {'destination': destination, 'origin': origin, 'travelMode': "WALKING"}
+        direction['request'] = {'destination': destination, 'origin': origin, 'travelMode': "DRIVING"}
 
 
         #Now, Calling the Weather API to fetch the weather details
@@ -84,12 +103,15 @@ class HomeView(TemplateView):
         request2 = "https://api.openweathermap.org/data/2.5/weather?lat=" + lat_param + "&lon=" + lon_param + "&appid=66b64cfa937f31bbd5cb328cdad938a0"
         weather_response = urllib.request.urlopen(request2).read()
         weatherresponse_start = json.loads(weather_response)
+        weather_start = weatherresponse_start['weather'][0]['main']
+
 
         lat_param, lon_param = fetch_latlong(y_param, gmaps)
         #request3 = "https://api.openweathermap.org/data/2.5/weather?q=" + y_param + "&appid=66b64cfa937f31bbd5cb328cdad938a0"
         request3 = "https://api.openweathermap.org/data/2.5/weather?lat=" + lat_param + "&lon=" + lon_param + "&appid=66b64cfa937f31bbd5cb328cdad938a0"
         weather_response = urllib.request.urlopen(request3).read()
         weatherresponse_destination = json.loads(weather_response)
+        weather_destination = weatherresponse_destination['weather'][0]['main']
 
 
         #return HttpResponse(json.dumps(direction))
@@ -98,7 +120,7 @@ class HomeView(TemplateView):
         if(directions_result is None):
             return render(request, self.template_name, {'form': form, 'flag': 0})
         else:
-            return render(request, self.template_name, {'form': form,'response': json.dumps(direction), 'flag': 1, 'start': start, 'end': destination, 'start_weather': json.dumps(weatherresponse_start), 'destination_weather': json.dumps(weatherresponse_destination)})
+            return render(request, self.template_name, {'form': form, 'response': json.dumps(direction), 'flag': 1, 'start': start, 'end': destination, 'start_weather': weather_start, 'destination_weather': weather_destination, 'weather_list': weather_list})
 
 def search(request):
     return render(request, 'maps/map.html', context=None)
