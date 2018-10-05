@@ -131,6 +131,11 @@
             }
         }
 
+        else if( {{flag}}===0)
+        {
+            alert('Please Enter Valid Input')
+        }
+
         else if({{flag}} ===1)
         {
             var server_response = JSON.parse('{{response | escapejs }}');
