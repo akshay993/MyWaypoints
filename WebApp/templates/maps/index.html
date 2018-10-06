@@ -49,6 +49,7 @@
 
         function typecastRoutes(routes)
         {
+
             routes.forEach(function(route)
             {
                 route.bounds = asBounds(route.bounds);
@@ -107,6 +108,7 @@
 
         directionsDisplay.setMap(map);
 
+        {#If get request, show the map with current location#}
         if ({{ flag }}===-1) {
             infoWindow = new google.maps.InfoWindow;
 
@@ -131,16 +133,17 @@
             }
         }
 
+        {#if invalid response, alert with message#}
         else if( {{flag}}===0)
         {
             alert('Please Enter Valid Input')
         }
 
+        {#if valid respomnse, plot route#}
         else if({{flag}} ===1)
         {
             var server_response = JSON.parse('{{response | escapejs }}');
 
-            console.log(server_response);
 
             typecastRoutes(server_response['routes']);
 
@@ -152,7 +155,7 @@
 
              var stepDisplay = new google.maps.InfoWindow;
 
-            console.log({{ weather_list | safe }})
+            <!--console.log({{ weather_list | safe }})-->
 
              showSteps(server_response, markerArray, stepDisplay, map);
 
@@ -167,21 +170,40 @@
                               'Error: Your browser doesn\'t support geolocation.');
         infoWindow.open(map);
       }
-
+      {#  Function to plot route#}
       function showSteps(directionResult, markerArray, stepDisplay, map) {
         // For each step, place a marker, and add the text to the marker's infowindow.
         // Also attach the marker to an array so we can keep track of it and remove it
         // when calculating new routes.
         var myRoute = directionResult['routes'][0]['legs'][0];
-        for (var i = 0; i < myRoute['steps'].length; i++) {
+        var weather_dict = JSON.parse('{{weather_dict | safe }}')
+          console.log(weather_dict)
+
+
+        for (var i = 1; i < myRoute['steps'].length+1; i++) {
+
+          var temp = weather_dict[String(i)]
           var marker = markerArray[i] = markerArray[i] || new google.maps.Marker;
           marker.setMap(map);
-          marker.setPosition(myRoute['steps'][i]['start_location']);
+          marker.setPosition(myRoute['steps'][i-1]['start_location']);
           stepDisplay.open(map, marker);
           <!--console.log(myRoute['steps'][i]['html_instructions']);-->
-          attachInstructionText(
-              <!--{{ weather_list | safe }}[i]-->
-              stepDisplay, marker,{{ weather_list | safe }}[i] , map);
+
+
+             {#text = "Name:" + temp.Name.toString();#}
+
+            text =`<div><center><b> <h3>Weather Details<h3> </b></center></div>
+                    <div> <b>Name</b>: ${temp.Name.toString()} </div>
+                    <div> <b>Description</b>: ${temp.Description.toString()} </div>
+                    <div> <b>Temp_Min</b>: ${temp.Temp_Min.toString()}  </div>
+                    <div> <b>Temp_Max</b>: ${temp.Temp_Max.toString()} </div>
+                    <div> <b>Pressure</b>: ${temp.Pressure.toString()} </div>
+                    <div> <b>Humidity</b>: ${temp.Humidity.toString()} </div>
+                    <div> <b>Wind_Speed</b>: ${temp.Wind_Speed.toString()} </div>
+                    <div> <b>Wind_Degree</b>: ${temp.Wind_Degree.toString()} </div>
+                    `
+
+            attachInstructionText(stepDisplay, marker,text, map)
         }
 
       }

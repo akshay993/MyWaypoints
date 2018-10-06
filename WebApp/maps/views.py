@@ -1,32 +1,20 @@
-from django.http import HttpResponse
-from django.shortcuts import render_to_response
+
 from django.shortcuts import render
 from django.views.generic import TemplateView
 from maps.inputform import InputForm
-from django.http import HttpResponseRedirect
 from urllib.parse import quote
-
 import googlemaps
 import json
-
 import urllib.request
-
-import requests
 from datetime import datetime
+import time
+from maps.models import Model_DataTable
 
 
-
-#def index(request):
-#    if request.method == "GET":
-#        return render(request, 'maps/index.html', context=None)
-#    if request.method == "GET":
-#        return render(request, 'maps/map.html', context=None)
 
 class HomeView(TemplateView):
+
     template_name = 'maps/index.html'
-
-
-
 
     def get(self, request):
         form = InputForm()
@@ -34,117 +22,165 @@ class HomeView(TemplateView):
 
     def post(self, request):
 
-
         form = InputForm(request.POST)
 
+        #creating google maps client object
+        gmaps = googlemaps.Client(key='AIzaSyBQThVIW-tNgV4Yth_Evk_vbLS4cVQgjgU')
+
         if form.is_valid():
-            form.save()
+            #form.save()
             start = form.cleaned_data['Start']
             destination = form.cleaned_data['End']
             #return HttpResponseRedirect('/search/')
 
         args = {'form': form, 'start': start, 'end': destination}
 
+        starttime = time.time()
 
-        gmaps = googlemaps.Client(key='AIzaSyBQThVIW-tNgV4Yth_Evk_vbLS4cVQgjgU')
+        #Fetch Table data from database
+        data_table = Model_DataTable.objects.all()
 
-        directions_result = gmaps.directions(request.POST['Start'], request.POST['End'], mode="driving", departure_time=datetime.now())
+        #data_object stores record from data_table if record is found
+        data_object = None
 
-        #request = https://maps.googleapis.com/maps/api/directions/json?origin=start&destination=destination&key=AIzaSyBQThVIW-tNgV4Yth_Evk_vbLS4cVQgjgU
+        #Iteration over the records found in the data_table
+        for data in data_table:
+            #if start, destination and date of the record matched with the one we entered in the form, we store the record in data_object and break from loop
+            if data.Start == start and data.End == destination and str(data.date) == datetime.today().strftime('%Y-%m-%d'):
+                data_object = data
+                break
 
-        #response = requests.get(
-         #   'https://maps.googleapis.com/maps/api/directions/json?origin=start&destination=destination&key=AIzaSyBQThVIW-tNgV4Yth_Evk_vbLS4cVQgjgU')
-        #direction = json.loads(response.text)
+        #if data_object is not null, we fetch the google api and weather api responses from the object and store those in respective variables
+        #we also fetch weather responses for start and destination
 
+        if data_object is not None :
 
-        x = str(request.POST['Start'])
-        y= str(request.POST['End'])
-
-        #print(x)
-        #print(y)
-        x_param = quote(x)
-        y_param = quote(y)
-
-        request1 = "https://maps.googleapis.com/maps/api/directions/json?origin=" + x_param + "&destination=" + y_param + "&key=AIzaSyBQThVIW-tNgV4Yth_Evk_vbLS4cVQgjgU"
-        #print(request1)
-        #print(request)
-        response = urllib.request.urlopen(request1).read()
-        direction = json.loads(response)
-
-        #myRoute = direction['routes'][0]['legs'][0]['steps'][1]['start_location']
-
-        #print(type(direction['status']))
-
-        if str(direction['status']) != 'ZERO_RESULTS':
-
-            weather_list=[]
-
-            #for i in direction['routes'][0]['legs'][0]['steps']:
-            for x in direction['routes'][0]['legs'][0]['steps']:
-                lat = str(x['start_location']['lat'])
-                lon = str(x['start_location']['lng'])
-                lat_param = quote(lat)
-                lon_param = quote(lon)
-                req = "https://api.openweathermap.org/data/2.5/weather?lat=" + lat_param + "&lon=" + lon_param + "&appid=66b64cfa937f31bbd5cb328cdad938a0"
-                weather_response = urllib.request.urlopen(req).read()
-                weather_res = json.loads(weather_response)
-                weather_list.append(weather_res['weather'][0]['main'])
+            #setting the parameters by extracting them from data_object like google response, weather response
+            direction = data_object.google_response
+            weather_dict = data_object.weather_response
 
 
-            #print(weather_list)
-
-            #print(str(myRoute))
-
-            destination={}
-            origin={}
-            destination['query'] = y
-            origin['query'] =x
-            direction['request'] = {'destination': destination, 'origin': origin, 'travelMode': str(request.POST['Mode'])}
+            x_param = quote(str(request.POST['Start']))
+            y_param = quote(str(request.POST['End']))
 
 
-            #Now, Calling the Weather API to fetch the weather details
-            lat_param, lon_param = fetch_latlong(x_param, gmaps)
-            request2 = "https://api.openweathermap.org/data/2.5/weather?lat=" + lat_param + "&lon=" + lon_param + "&appid=66b64cfa937f31bbd5cb328cdad938a0"
-            weather_response = urllib.request.urlopen(request2).read()
-            weatherresponse_start = json.loads(weather_response)
-            weather_start = weatherresponse_start['weather'][0]['main']
+            endtime_db= time.time()
 
+            #printing database access time
+            print(endtime_db- starttime)
 
-            lat_param, lon_param = fetch_latlong(y_param, gmaps)
-            #request3 = "https://api.openweathermap.org/data/2.5/weather?q=" + y_param + "&appid=66b64cfa937f31bbd5cb328cdad938a0"
-            request3 = "https://api.openweathermap.org/data/2.5/weather?lat=" + lat_param + "&lon=" + lon_param + "&appid=66b64cfa937f31bbd5cb328cdad938a0"
-            weather_response = urllib.request.urlopen(request3).read()
-            weatherresponse_destination = json.loads(weather_response)
-            weather_destination = weatherresponse_destination['weather'][0]['main']
-
-
-            #return HttpResponse(json.dumps(direction))
-            #return render(request, self.template_name, args)
-
-
-            #print(weather_list)
-
-            #if(directions_result is None):
-            #    return render(request, self.template_name, {'form': form, 'flag': 0})
-            #else:
-            #    return render(request, self.template_name, {'form': form, 'response': json.dumps(direction), 'flag': 1, 'start': start, 'end': destination, 'start_weather': weather_start, 'destination_weather': weather_destination, 'weather_list': weather_list})
+            #Send google api, weather api responses to index.html
             return render(request, self.template_name,
                           {'form': form, 'response': json.dumps(direction), 'flag': 1, 'start': start,
-                           'end': destination, 'start_weather': weather_start,
-                           'destination_weather': weather_destination, 'weather_list': weather_list})
+                           'end': destination,  'weather_dict': json.dumps(weather_dict)})
 
+        #else, we call APIs to get the responses (google maps and weather) and save them to database
         else:
 
-            form = InputForm()
-            return render(request, self.template_name, {'form': form, 'flag': 0})
+            #creating google maps client object
+            gmaps = googlemaps.Client(key='AIzaSyBQThVIW-tNgV4Yth_Evk_vbLS4cVQgjgU')
 
 
+            x = str(request.POST['Start'])
+            y= str(request.POST['End'])
+
+            x_param = quote(x)
+            y_param = quote(y)
+
+            #sending request to google maps api for route
+            request1 = "https://maps.googleapis.com/maps/api/directions/json?origin=" + x_param + "&destination=" + y_param + "&key=AIzaSyBQThVIW-tNgV4Yth_Evk_vbLS4cVQgjgU"
+            response = urllib.request.urlopen(request1).read()
+            direction = json.loads(response)
+
+            if str(direction['status']) != 'ZERO_RESULTS':
+
+                weather_list=[]
+
+                weather_dict= dict()
+                i =1
+
+                for x in direction['routes'][0]['legs'][0]['steps']:
+                    lat = str(x['start_location']['lat'])
+                    lon = str(x['start_location']['lng'])
+                    lat_param = quote(lat)
+                    lon_param = quote(lon)
+                    req = "https://api.openweathermap.org/data/2.5/weather?lat=" + lat_param + "&lon=" + lon_param + "&appid=66b64cfa937f31bbd5cb328cdad938a0"
+                    weather_response = urllib.request.urlopen(req).read()
+                    weather_res = json.loads(weather_response)
+                    weather_list.append(weather_res['weather'][0]['main'])
+                    temp = dict()
+
+                    #Everything is in try catch because sometimes, we dont some information for the particular waypoint like pressure etc
+                    try:
+                        temp['Name'] = str(weather_res['name'])
+                    except:
+                        temp['Name'] = "Not Defined"
+                    try:
+                        temp['Description']= str(weather_res['weather'][0]['description'])
+                    except:
+                        temp['Description'] = "Not Defined"
+                    try:
+                        temp['Temp_Min'] = str(round((weather_res['main']['temp_min'] -273.15)*1.8 +32, 2))
+                    except:
+                        temp['Temp_Min'] = "Not Defined"
+                    try:
+                        temp['Temp_Max'] = str(round((weather_res['main']['temp_max'] -273.15)*1.8 +32 , 2))
+                    except:
+                        temp['Temp_Max'] = "Not Defined"
+                    try:
+                        temp['Pressure'] = str(weather_res['main']['pressure'])
+                    except:
+                        temp['Pressure'] = "Not Defined"
+                    try:
+                        temp['Humidity'] = str(weather_res['main']['humidity'])
+                    except:
+                        temp['Humidity'] = "Not Defined"
+                    try:
+                        temp['Wind_Speed'] = str(weather_res['wind']['speed'])
+                    except:
+                        temp['Wind_Speed'] = "Not Defined"
+                    try:
+                        temp['Wind_Degree'] = str(weather_res['wind']['deg'])
+                    except:
+                        temp['Wind_Degree'] = "Not Defined"
+
+                    weather_dict[str(i)]=temp
+                    i=i+1
 
 
-def search(request):
-    return render(request, 'maps/map.html', context=None)
+                #appending direction object with request
+                destination={}
+                origin={}
+                destination['query'] = y
+                origin['query'] =x
+                direction['request'] = {'destination': destination, 'origin': origin, 'travelMode': str(request.POST['Mode'])}
 
 
+                #Saving data to database table
+                object_datatable = Model_DataTable()
+                object_datatable.Start = start
+                object_datatable.End = form.cleaned_data['End']
+                object_datatable.Mode = request.POST['Mode']
+                object_datatable.google_response = direction
+                object_datatable.weather_response = weather_dict
+                object_datatable.save()
+
+                endtime_api = time.time()
+
+                #Printing time required for API access
+                print( endtime_api - starttime)
+
+                return render(request, self.template_name,
+                              {'form': form, 'response': json.dumps(direction), 'flag': 1, 'start': start,
+                               'end': destination,  'weather_dict': json.dumps(weather_dict)})
+
+            else:
+
+                form = InputForm()
+                return render(request, self.template_name, {'form': form, 'flag': 0})
+
+
+#fetching the latitude and longitudes for a particular location
 def fetch_latlong(loc, gmaps):
     geocode_result = gmaps.geocode(loc)
     lat = geocode_result[0]["geometry"]["location"]["lat"]
