@@ -25,7 +25,7 @@ class HomeView(TemplateView):
         form = InputForm(request.POST)
 
         #creating google maps client object
-        gmaps = googlemaps.Client(key='AIzaSyBQThVIW-tNgV4Yth_Evk_vbLS4cVQgjgU')
+        gmaps = googlemaps.Client(key='YOUR_KEY')
 
         if form.is_valid():
             #form.save()
@@ -78,7 +78,7 @@ class HomeView(TemplateView):
         else:
 
             #creating google maps client object
-            gmaps = googlemaps.Client(key='AIzaSyBQThVIW-tNgV4Yth_Evk_vbLS4cVQgjgU')
+            gmaps = googlemaps.Client(key='YOUR_KEY')
 
 
             x = str(request.POST['Start'])
